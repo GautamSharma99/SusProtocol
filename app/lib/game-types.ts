@@ -72,9 +72,16 @@ export interface Agent {
 
 // --- Prediction Market ---
 export type MarketStatus = "OPEN" | "FROZEN" | "RESOLVED"
+export type MarketKind =
+  | "crew_win"
+  | "identify_impostor"
+  | "agent_survive_round"
+  | "killer_kill_again"
+  | "meeting_ejects"
 
 export interface PredictionMarket {
   id: string
+  kind: MarketKind
   question: string
   yesOdds: number
   noOdds: number
@@ -82,25 +89,29 @@ export interface PredictionMarket {
   resolved?: "YES" | "NO"
   createdAt: number
   relatedAgent?: string
+  predictions: Record<string, MarketPrediction>
+  lockedAt?: number
+  resolvedAt?: number
 }
 
-// --- Token State ---
-export interface PricePoint {
-  time: number
-  price: number
-  label?: string
+export type PredictionChoice = "YES" | "NO"
+
+export interface MarketPrediction {
+  userId: string
+  choice: PredictionChoice
+  predictedAt: number
 }
 
-export interface TokenState {
-  name: string
-  ticker: string
-  price: number
-  priceHistory: PricePoint[]
-  hypeScore: number
-  userCredits: number
-  userTokens: number
-  gameActive: boolean
-  cashedOut: boolean
+export interface LeaderboardEntry {
+  userId: string
+  username: string
+  points: number
+  correct: number
+  total: number
+  streak: number
+  bestStreak: number
+  rank: number
+  lastDelta: number
 }
 
 // --- Game State ---
@@ -109,8 +120,9 @@ export interface GameState {
   agents: Agent[]
   feed: FeedItem[]
   markets: PredictionMarket[]
+  leaderboard: LeaderboardEntry[]
+  currentUserId: string
   imposter: string | null
   winner: "crew" | "imposter" | null
   connectionStatus: "connecting" | "connected" | "disconnected"
-  token: TokenState
 }

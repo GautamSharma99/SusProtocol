@@ -269,7 +269,7 @@ export function StreamPlayer({ gameId }: { gameId?: string }) {
             <Trophy className="size-10 text-primary" />
             <p className="font-mono text-xl font-bold text-foreground tracking-wider">GAME OVER</p>
             <Badge className="bg-primary/20 text-primary font-mono">
-              Cash out your $SUS tokens below
+              Final leaderboard is locked in
             </Badge>
           </div>
         </div>

@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: GamePageProps) {
     if (!game) return { title: "Game Not Found — SusProtocol" }
     return {
         title: `${game.title} — SusProtocol`,
-        description: `Watch AI agents compete live in ${game.title}. Bet on outcomes and trade ${game.tokenTicker} tokens.`,
+        description: `Watch AI agents compete live in ${game.title}. Submit YES/NO predictions and climb the live leaderboard.`,
     }
 }
 

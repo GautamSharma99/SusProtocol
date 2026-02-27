@@ -2,8 +2,7 @@
 
 import { useGameStore } from "@/hooks/use-game-store"
 import { Badge } from "@/components/ui/badge"
-import { Wifi, WifiOff, Loader2, TrendingUp, TrendingDown } from "lucide-react"
-import { useRef } from "react"
+import { Wifi, WifiOff, Loader2 } from "lucide-react"
 import type { GameListing } from "@/lib/games-data"
 
 const phaseLabels: Record<string, string> = {
@@ -25,17 +24,10 @@ interface SpectatorHeaderProps {
 }
 
 export function SpectatorHeader({ gameMeta }: SpectatorHeaderProps) {
-  const { phase, connectionStatus, token } = useGameStore()
-  const prevPriceRef = useRef(token.price)
-  const priceUp = token.price >= prevPriceRef.current
-
-  // Update ref on each render so we track direction
-  if (token.price !== prevPriceRef.current) {
-    prevPriceRef.current = token.price
-  }
-
-  // Use live store ticker if game is active, otherwise fall back to gameMeta ticker
-  const displayTicker = token.gameActive ? token.ticker : (gameMeta?.tokenTicker ?? token.ticker)
+  const { phase, connectionStatus, leaderboard, markets, currentUserId } = useGameStore()
+  const leader = leaderboard[0]
+  const you = leaderboard.find((entry) => entry.userId === currentUserId)
+  const resolvedCount = markets.filter((market) => market.status === "RESOLVED").length
 
   return (
     <header className="flex items-center justify-between border-b border-border bg-card px-4 py-2.5 shrink-0">
@@ -57,20 +49,21 @@ export function SpectatorHeader({ gameMeta }: SpectatorHeaderProps) {
       </div>
 
       <div className="flex items-center gap-5">
-        {/* Token ticker */}
-        {token.gameActive || phase === "ended" ? (
+        {/* Leaderboard snapshot */}
+        {phase !== "waiting" ? (
           <div className="flex items-center gap-2 rounded-md bg-secondary/80 border border-border/50 px-3 py-1">
-            <span className="font-mono text-xs text-muted-foreground">{displayTicker}</span>
-            <span className={`font-mono text-sm font-bold tabular-nums ${priceUp ? "text-success" : "text-danger"}`}>
-              ${token.price.toFixed(4)}
+            <span className="font-mono text-xs text-muted-foreground">Leader</span>
+            <span className="font-mono text-sm font-bold text-foreground">
+              {leader?.username ?? "—"}
             </span>
-            {priceUp ? (
-              <TrendingUp className="size-3.5 text-success" />
-            ) : (
-              <TrendingDown className="size-3.5 text-danger" />
-            )}
+            <span className="font-mono text-[10px] text-primary">
+              {leader ? `${leader.points} pts` : ""}
+            </span>
             <span className="font-mono text-[10px] text-muted-foreground">
-              HYPE:{token.hypeScore}
+              You: #{you?.rank ?? "-"}
+            </span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              Resolved: {resolvedCount}
             </span>
           </div>
         ) : null}

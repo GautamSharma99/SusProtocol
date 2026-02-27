@@ -10,7 +10,7 @@ import { PredictionMarkets } from "./prediction-markets"
 import { TokenLaunchpad } from "./token-launchpad"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Play, RotateCcw, BarChart3, Coins, ArrowLeft } from "lucide-react"
+import { Play, RotateCcw, BarChart3, Trophy, ArrowLeft } from "lucide-react"
 import { MOCK_GAMES } from "@/lib/games-data"
 import Link from "next/link"
 
@@ -30,19 +30,12 @@ export function SpectatorApp({ gameId }: SpectatorAppProps) {
   // Look up this game's metadata so the header can show the right ticker/title
   const gameMeta = gameId ? MOCK_GAMES.find((g) => g.id === gameId) : null
 
-  // Pass metadata into the store so SpectatorHeader picks it up correctly
+  // Reset on unmount so next page starts clean
   useEffect(() => {
-    if (gameMeta) {
-      gameActions.setGameMeta({
-        ticker: gameMeta.tokenTicker,
-        title: gameMeta.title,
-      })
-    }
-    // Reset on unmount so next page starts clean
     return () => {
       gameActions.resetGame()
     }
-  }, [gameMeta])
+  }, [])
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -112,20 +105,20 @@ export function SpectatorApp({ gameId }: SpectatorAppProps) {
               className="font-mono text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 gap-1.5"
             >
               <BarChart3 className="size-3.5" />
-              Betting
+              Predictions
             </TabsTrigger>
             <TabsTrigger
-              value="token"
+              value="leaderboard"
               className="font-mono text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/30 gap-1.5"
             >
-              <Coins className="size-3.5" />
-              Token Launchpad
+              <Trophy className="size-3.5" />
+              Leaderboard
             </TabsTrigger>
           </TabsList>
           <TabsContent value="betting" className="flex-1 overflow-auto m-0">
             <PredictionMarkets />
           </TabsContent>
-          <TabsContent value="token" className="flex-1 overflow-hidden m-0">
+          <TabsContent value="leaderboard" className="flex-1 overflow-hidden m-0">
             <TokenLaunchpad />
           </TabsContent>
         </Tabs>
