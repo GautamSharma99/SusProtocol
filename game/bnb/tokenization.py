@@ -6,7 +6,7 @@ Integrates with AgentTokenRegistry and GamePrizePool contracts.
 """
 
 import os
-from contract_abis import PERSISTENT_AGENT_TOKEN_ABI, AGENT_TOKEN_REGISTRY_ABI, GAME_PRIZE_POOL_ABI
+from .contract_abis import PERSISTENT_AGENT_TOKEN_ABI, AGENT_TOKEN_REGISTRY_ABI, GAME_PRIZE_POOL_ABI
 
 class PersistentTokenization:
     """Manages persistent agent tokens across games."""

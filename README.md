@@ -1,17 +1,17 @@
 <p align="center">
-  <img src="Assets/Images/menu/imposteramongus.png" alt="MonadSus Banner" width="700"/>
+  <img src="Assets/Images/menu/imposteramongus.png" alt="SusProtocol Banner" width="700"/>
 </p>
 
-<h1 align="center">🛸 MonadSus</h1>
+<h1 align="center">🛸 SusProtocol</h1>
 
 <p align="center">
-  <b>A spectator-only, multi-agent social deduction simulation on <a href="https://monad.sus">Monad</a></b><br/>
+  <b>A spectator-only, multi-agent social deduction simulation on <a href="https://bnb.sus">BNB</a></b><br/>
   <i>All players are autonomous AI agents. Humans don't play — they watch and bet.</i>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/Monad-Testnet-blueviolet?style=for-the-badge" alt="Monad"/>
+  <img src="https://img.shields.io/badge/BNB-Testnet-blueviolet?style=for-the-badge" alt="BNB"/>
   <img src="https://img.shields.io/badge/Solidity-Smart%20Contracts-363636?style=for-the-badge&logo=solidity" alt="Solidity"/>
   <img src="https://img.shields.io/badge/Pygame-Engine-green?style=for-the-badge&logo=pygame" alt="Pygame"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License"/>
@@ -21,7 +21,7 @@
 
 ## 🎬 What Is This?
 
-Imagine **Among Us**, but every single player is an AI agent — making decisions autonomously, accusing each other, forming alliances, and betraying trust. **You** are the spectator. Watch the chaos unfold, and place your bets on who lives, who dies, and who the imposter really is — all settled on-chain via **Monad prediction markets**.
+Imagine **Among Us**, but every single player is an AI agent — making decisions autonomously, accusing each other, forming alliances, and betraying trust. **You** are the spectator. Watch the chaos unfold, and place your bets on who lives, who dies, and who the imposter really is — all settled on-chain via **BNB prediction markets**.
 
 <p align="center">
   <img src="Assets/Images/menu/imposteramongusback.png" alt="Crewmates — There is 1 Imposter Among Us" width="600"/>
@@ -213,7 +213,7 @@ Agents generate context-aware dialogue during meetings:
 
 ---
 
-## ⛓️ On-Chain Integration (Monad Testnet)
+## ⛓️ On-Chain Integration (BNB Testnet)
 
 All game events are hashed, logged, and settled on-chain.
 
@@ -231,9 +231,9 @@ Located in `monadsus-contracts/src/`:
 ### Deploy Contracts
 
 ```bash
-cd monadsus-contracts
+cd susprotocol-contracts
 forge build
-forge script script/Deploy.s.sol --rpc-url <MONAD_RPC> --broadcast
+forge script script/Deploy.s.sol --rpc-url <BNB_RPC> --broadcast
 ```
 
 ---
@@ -273,7 +273,7 @@ Every game exports a full replay log as JSON:
 ## 📂 Project Structure
 
 ```
-monaddotsus/
+susprotocol/
 ├── main_autonomous.py          # 🚀 Entry point
 ├── autonomous_game.py          # 🎮 Game engine (850+ lines)
 ├── agent_controller.py         # 🤖 Agent interface + SimpleAgent
@@ -284,7 +284,7 @@ monaddotsus/
 ├── settings.py                 # ⚙️ Config & sprite loading
 ├── game.py                     # 🕹️ Original game (reference)
 ├── openclaw_agent.py           # 🧠 Advanced agent implementation
-├── monadsus-contracts/         # 📜 Solidity contracts (Foundry)
+├── susprotocol-contracts/         # 📜 Solidity contracts (Foundry)
 │   └── src/
 │       ├── AgentRegistry.sol
 │       ├── GameRegistry.sol

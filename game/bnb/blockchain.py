@@ -337,7 +337,7 @@ GAME_RESOLVER_ABI = [
 # ---------------------------------------------------------------------------
 
 # Import ABIs from separate file to avoid circular imports
-from contract_abis import (
+from .contract_abis import (
     PERSISTENT_AGENT_TOKEN_ABI,
     AGENT_TOKEN_REGISTRY_ABI,
     GAME_PRIZE_POOL_ABI
@@ -741,7 +741,7 @@ class MonadSusChainIntegration:
         
         # Import tokenization module
         try:
-            from tokenization import PersistentTokenization
+            from .tokenization import PersistentTokenization
             self.tokenization = PersistentTokenization(self.connector)
         except ImportError:
             print("  [CHAIN] Warning: tokenization.py not found, tokenization disabled")
