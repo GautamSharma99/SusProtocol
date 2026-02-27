@@ -95,12 +95,15 @@
   }
   body {
     @apply text-foreground;
-    background-image: url('/bg.gif');
+    background-image: url('/pookie.gif');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
     background-repeat: no-repeat;
-    background-color: oklch(0.08 0.01 250);
+    background-color: transparent;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
   }
 }
 

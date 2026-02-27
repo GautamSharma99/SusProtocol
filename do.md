@@ -1,316 +1,210 @@
+Instead of launching tokens, you are building a **live prediction leaderboard** that updates during a match based on how well spectators predict outcomes as the game unfolds.
 
-# PRD — Live Autonomous Game Streaming + Prediction Markets UI
+Think:
 
-## 1. Overview
-
-Build a **spectator-first web platform** where autonomous *Among Us–style* games run externally (Pygame, local/remote), and are streamed in real time to a **Next.js app** via WebSockets.
-
-Users can:
-
-* Watch multiple live games
-* Enter a specific game stream
-* See real-time game events (kills, meetings, votes)
-* Interact with **prediction markets and token launches** that appear dynamically during the game
-* Start a game from the web UI
-
-The game engine is **authoritative**.
-The web UI is **reactive**, not controlling gameplay logic.
+> *Fantasy league + prediction market mechanics + live autonomous AI gameplay*
+> **without tokens.**
 
 ---
 
-## 2. Goals
+## What replaces token launches?
 
-### Primary Goals
+### 🔁 Token launch → **Live Prediction Leaderboard**
 
-* Stream live autonomous gameplay to the web in real time
-* Support multiple simultaneous games (streams)
-* Dynamically create prediction markets during gameplay
-* Enable users to start games from the UI
+During a single game:
 
-### Non-Goals
-
-* No human gameplay control
-* No video streaming (event-driven, not pixel streaming)
-* No on-chain settlement in v1 (hooks only)
-
----
-
-## 3. User Personas
-
-### Spectator (Primary)
-
-* Crypto-native
-* Enjoys watching agents play
-* Wants to trade / bet based on live behavior
-* Needs fast, responsive UI
-
-### Game Operator (Secondary)
-
-* Starts games
-* Monitors streams
-* Debugs agent behavior
-
----
-
-## 4. System Architecture
-
-```
-[Pygame Game Engine] (authoritative)
-        |
-        | emits events
-        v
-[Game Event Server] (WebSocket + REST)
-        |
-        | broadcasts
-        v
-[Next.js App]
-   ├── Dashboard (multi-stream)
-   ├── Game View (single stream)
-   └── Prediction Markets UI
-```
-
-### Key Principle
-
-**One-way real-time data flow**
-
-* Game → Web
-* Web can only send *commands* like `START_GAME`
-
----
-
-## 5. Game Event Protocol
-
-All communication uses **semantic events**, not frames.
-
-### Core Events
-
-```json
-GAME_CREATED
-GAME_STARTED
-AGENT_KILLED
-MEETING_STARTED
-AGENT_SPOKE
-VOTE_CAST
-AGENT_EJECTED
-GAME_ENDED
-```
-
-Each event includes:
-
-* `game_id`
-* `timestamp`
-* `payload` (agent IDs, reasons, etc.)
-
-This protocol is shared between backend and frontend.
-
----
-
-## 6. Feature Requirements
-
----
-
-### FR-1: Multi-Game Dashboard (Screenshot 1)
-
-**Description**
-A homepage listing:
-
-* Live games
-* Starting games
-* Upcoming games
-
-**Each card shows**
-
-* Game name / map
-* Status (LIVE / STARTING / UPCOMING)
-* Viewer count
-* Token price or hype metric
-* “Watch” CTA
-
-**Acceptance Criteria**
-
-* Games update live via WebSocket
-* Clicking a card navigates to game view
-
----
-
-### FR-2: Single Game View (Screenshot 2)
-
-**Description**
-When a user enters a game:
-
-* Live game feed is shown
-* Event log updates in real time
-* Prediction markets panel is visible
-
-**Sections**
-
-* Game status bar (time, agents alive)
-* Event feed (kills, meetings, dialogue)
-* Prediction markets container
-* Token launchpad entry
-
-**Acceptance Criteria**
-
-* Events appear within <200ms
-* UI updates without refresh
-
----
-
-### FR-3: Game Streaming via WebSocket
-
-**Description**
-The game engine pushes events to a WebSocket server.
-Frontend subscribes to:
-
-```
-ws://server/ws/game/{game_id}
-```
-
-**Acceptance Criteria**
-
-* Reconnect on refresh
-* Graceful disconnect handling
-* No duplicate events
-
----
-
-### FR-4: Start Game from Next.js UI
-
-**Description**
-User can click “Run Demo” / “Start Game”.
-
-**Flow**
-
-1. Next.js sends REST call: `POST /game/start`
-2. Backend spawns game process
-3. Game emits `GAME_STARTED`
-4. UI transitions to live state
-
-**Acceptance Criteria**
-
-* Game starts without page reload
-* UI reflects state change instantly
-
----
-
-### FR-5: Dynamic Prediction Markets
-
-**Description**
-Prediction markets appear **based on game events**, not manually.
-
-**Examples**
-
-* On `GAME_STARTED`
+* Prediction questions appear dynamically:
 
   * “Will the Crew win?”
-* On first `AGENT_KILLED`
+  * “Is Agent Red the Impostor?”
+  * “Will Agent Blue survive this round?”
+* Spectators submit **YES / NO predictions**
+* Predictions lock when the relevant event resolves
+* Users earn **points**, not tokens
+* A **leaderboard updates in real time**
 
-  * “Is Agent X the Impostor?”
-  * “Will Agent X survive?”
-* On `MEETING_STARTED`
+At game end:
 
-  * Voting-related markets
+* Leaderboard finalizes
+* Top predictors win bragging rights / XP / badges (or later rewards)
 
-**Market Properties**
-
-* Question
-* YES / NO actions
-* Status: OPEN / FROZEN / RESOLVED
-* Timer tied to game lifecycle
-
-**Acceptance Criteria**
-
-* Markets appear automatically
-* Markets freeze on `GAME_ENDED`
+No assets, no liquidity, no speculation.
 
 ---
 
-### FR-6: Token Launch During Game
+## Why this is actually better (honest reasons)
 
-**Description**
-Each game can spawn **temporary tokens** during its lifetime.
+### 1. You preserve the *core insight*
 
-**Rules**
+The real innovation was **turning observable agent behavior into belief signals**.
 
-* Token exists only while game is live
-* Tradeable during game
-* Frozen and settled at game end
+That still exists.
 
-**Acceptance Criteria**
-
-* Token UI appears in-game
-* No interaction after game ends
+Leaderboard = belief accuracy over time.
 
 ---
 
-## 7. State Management (Frontend)
+### 2. You remove regulatory + UX friction
 
-Global state tracks:
+No:
 
-* Active games list
-* Current game state
-* Agents alive/dead
-* Event feed history
-* Active markets
-* Token status
+* token launches
+* wallets
+* approvals
+* fees
+* “is this gambling?” questions
 
-State updates are driven **only by WebSocket events**.
+Anyone can:
 
----
+* open the app
+* watch
+* predict
+* compete
 
-## 8. Backend Responsibilities
-
-* Manage active game processes
-* Maintain game → socket event pipeline
-* Fan-out events to subscribers
-* Expose REST APIs:
-
-  * `POST /game/start`
-  * `GET /games`
-  * `GET /game/{id}`
+This massively improves adoption.
 
 ---
 
-## 9. UX Requirements
+### 3. Leaderboards are easier to understand
 
-* Dark, immersive theme
-* Subtle animations for new events
-* Non-blocking market popups
-* Clear spectator-only labeling
-* Mobile-friendly layout (read-only)
+Judges instantly get:
 
----
+* “People predict outcomes”
+* “Accuracy is measured”
+* “Best predictors rise to the top”
 
-## 10. Security & Constraints
-
-* No client → game mutation beyond `START_GAME`
-* Event validation server-side
-* Rate-limit start-game requests
-* No direct socket access to game process
+No explanation debt.
 
 ---
 
-## 11. Success Metrics
+### 4. It still scales to Web3 later
 
-* Multiple games streaming concurrently
-* Zero game desyncs
-* Users can watch, enter, and trade without reload
-* One full match from start → end works live
+Important:
+You are **not killing the Web3 path**, you’re deferring it.
+
+Later:
+
+* leaderboard points → on-chain reputation
+* top predictors → NFT badges
+* seasons → on-chain rewards
+
+But **today**, it’s clean.
 
 ---
 
-## 12. V1 Definition of Done
+## How the leaderboard works (concrete)
 
-* Dashboard lists live games
-* Clicking a game opens live stream
-* Game events stream in real time
-* Prediction markets appear dynamically
-* Game can be started from UI
-* Game ends cleanly and UI resolves state
+### Prediction lifecycle
 
+1. **Game event occurs**
 
-### One-liner summary (keep this handy)
+   * e.g. `GAME_START`
+2. **Prediction question appears**
 
-> An event-driven, spectator-first platform where autonomous games stream live to the web and spawn prediction markets as the game unfolds.
+   * “Will the Crew win?”
+3. **Users submit prediction**
 
+   * YES / NO
+4. **Question locks**
 
+   * on meeting / kill / timeout
+5. **Outcome resolves**
+6. **Points awarded**
+
+---
+
+### Scoring system (simple + fair)
+
+Example:
+
+* Correct prediction → +10 points
+* Early prediction bonus → +2
+* Wrong prediction → 0
+* No penalty (keeps it fun)
+
+Optional:
+
+* Hard questions = more points
+* Streak bonus
+
+---
+
+### Leaderboard updates live
+
+Leaderboard shows:
+
+* Username / wallet (optional)
+* Total points
+* Accuracy %
+* Rank
+
+Updates after every resolved question.
+
+This keeps users engaged **throughout the match**.
+
+---
+
+## Why prediction questions popping matters
+
+Without questions:
+
+* watching is passive
+
+With questions:
+
+* users actively form hypotheses
+* pay attention to dialogue
+* watch agent behavior closely
+
+Every:
+
+* accusation
+* vote
+* hesitation
+
+becomes meaningful.
+
+This is the same psychological hook as prediction markets — without money.
+
+---
+
+## How to explain this in one clean paragraph (use this)
+
+> Instead of launching tokens, we use a live prediction leaderboard that updates throughout each match. As autonomous AI agents play, the system surfaces prediction questions tied to real game events. Spectators submit YES/NO predictions, earn points based on accuracy, and climb a real-time leaderboard. This turns observing agent behavior into an interactive, competitive experience without requiring token launches.
+
+---
+
+## Why this still fits the **Prediction Market** track
+
+Because:
+
+* It’s still belief aggregation
+* It’s still outcome-based
+* It’s still event-driven
+* It’s still resolved deterministically
+
+The only difference:
+
+> **belief is scored, not traded**
+
+Many prediction market platforms actually use this for onboarding.
+
+---
+
+## Why this is a good production move
+
+* Faster to ship
+* Easier to demo
+* Easier to explain
+* Lower risk
+* Broader audience
+
+You made a **mature product decision**.
+
+---
+
+## One-line positioning update
+
+> Autonomous AI agents play a social deduction game while spectators compete on a live prediction leaderboard based on real-time game events.
+
+---

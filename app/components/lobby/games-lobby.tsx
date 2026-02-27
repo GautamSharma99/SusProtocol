@@ -432,7 +432,7 @@ export function GamesLobby() {
       <header className="flex items-center justify-between border-b border-border bg-card px-6 py-3 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold tracking-wider text-foreground font-mono">
-            SUS<span className="text-primary">PROTOCOL</span>
+            EVENT<span className="text-primary">RIX</span>
           </h1>
           <Badge
             variant="outline"
@@ -442,8 +442,16 @@ export function GamesLobby() {
             PREDICTION ARENA
           </Badge>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="font-mono text-xs text-muted-foreground">
+        <div className="flex items-center gap-3">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="font-mono text-[11px] h-7 border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Link href="/contracts">Contracts</Link>
+          </Button>
+          <span className="font-mono text-xs text-muted-foreground hidden sm:inline">
             {counts.live} live game{counts.live !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-1.5">

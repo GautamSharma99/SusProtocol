@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="Assets/Images/menu/imposteramongus.png" alt="SusProtocol Banner" width="700"/>
+  <img src="game/Assets/Images/menu/imposteramongus.png" alt="Eventrix Banner" width="700"/>
 </p>
 
-<h1 align="center">🛸 SusProtocol</h1>
+<h1 align="center">🛸 Eventrix</h1>
 
 <p align="center">
-  <b>A spectator-only, multi-agent social deduction simulation on <a href="https://bnb.sus">BNB</a></b><br/>
+  <b>A spectator-only, multi-agent social deduction simulation on <a href="https://bnb.eventrix">BNB</a></b><br/>
   <i>All players are autonomous AI agents. Humans don't play — they watch and bet.</i>
 </p>
 
@@ -24,7 +24,7 @@
 Imagine **Among Us**, but every single player is an AI agent — making decisions autonomously, accusing each other, forming alliances, and betraying trust. **You** are the spectator. Watch the chaos unfold, and place your bets on who lives, who dies, and who the imposter really is — all settled on-chain via **BNB prediction markets**.
 
 <p align="center">
-  <img src="Assets/Images/menu/imposteramongusback.png" alt="Crewmates — There is 1 Imposter Among Us" width="600"/>
+  <img src="game/Assets/Images/menu/imposteramongusback.png" alt="Crewmates — There is 1 Imposter Among Us" width="600"/>
 </p>
 
 ---
@@ -59,7 +59,7 @@ python -m http.server 8000
 
 ### 🔪 The Kill
 
-<img src="Assets/Images/Alerts/kill1.png" alt="Kill Animation" width="350"/>
+  <img src="game/Assets/Images/Alerts/kill1.png" alt="Kill Animation" width="350"/>
 
 Imposters eliminate crewmates when no one's watching. Bodies are discovered by nearby agents.
 
@@ -68,7 +68,7 @@ Imposters eliminate crewmates when no one's watching. Bodies are discovered by n
 
 ### 🚨 Emergency Meeting
 
-<img src="Assets/Images/Alerts/emergency_meeting_red.png" alt="Emergency Meeting" width="350"/>
+  <img src="game/Assets/Images/Alerts/emergency_meeting_red.png" alt="Emergency Meeting" width="350"/>
 
 A body is found! All agents gather to discuss and accuse.
 
@@ -79,7 +79,7 @@ A body is found! All agents gather to discuss and accuse.
 
 ### 💬 Discussion Phase
 
-<img src="Assets/Images/Meeting/chat.png" alt="Discussion UI" width="350"/>
+  <img src="game/Assets/Images/Meeting/chat.png" alt="Discussion UI" width="350"/>
 
 Agents speak, accuse, defend, and bluff — all autonomously generated dialogue.
 
@@ -88,7 +88,7 @@ Agents speak, accuse, defend, and bluff — all autonomously generated dialogue.
 
 ### 🤫 Role Assignment
 
-<img src="Assets/Images/Meeting/shhhhhhh.png" alt="Shhhhh — Imposter Role" width="350"/>
+  <img src="game/Assets/Images/Meeting/shhhhhhh.png" alt="Shhhhh — Imposter Role" width="350"/>
 
 One agent is secretly the imposter. Can the crew figure it out before it's too late?
 
@@ -106,7 +106,7 @@ One agent is secretly the imposter. Can the crew figure it out before it's too l
 
 ### ✅ Crew Wins
 
-<img src="Assets/Images/Alerts/victory.png" alt="Crewmembers Won" width="400"/>
+  <img src="game/Assets/Images/Alerts/victory.png" alt="Crewmembers Won" width="400"/>
 
 The imposter is caught and ejected!
 
@@ -115,7 +115,7 @@ The imposter is caught and ejected!
 
 ### 💀 Imposter Wins
 
-<img src="Assets/Images/Alerts/defeat.png" alt="Imposter Won" width="400"/>
+  <img src="game/Assets/Images/Alerts/defeat.png" alt="Imposter Won" width="400"/>
 
 The imposter eliminates enough crewmates to take over.
 
@@ -124,7 +124,7 @@ The imposter eliminates enough crewmates to take over.
 </table>
 
 <p align="center">
-  <img src="Assets/Images/Alerts/eject.png" alt="Ejection" width="300"/>
+  <img src="game/Assets/Images/Alerts/eject.png" alt="Ejection" width="300"/>
   <br/><i>The airlock doesn't discriminate...</i>
 </p>
 
@@ -133,11 +133,11 @@ The imposter eliminates enough crewmates to take over.
 ## 🕹️ In-Game Actions
 
 <p align="center">
-  <img src="Assets/Images/UI/kill_icon.png" alt="Kill" height="60"/>&nbsp;&nbsp;&nbsp;
-  <img src="Assets/Images/UI/emergency_icon.png" alt="Emergency" height="60"/>&nbsp;&nbsp;&nbsp;
-  <img src="Assets/Images/UI/sabotage_icon.png" alt="Sabotage" height="60"/>&nbsp;&nbsp;&nbsp;
-  <img src="Assets/Images/UI/light_bulb_icon.png" alt="Lights" height="60"/>&nbsp;&nbsp;&nbsp;
-  <img src="Assets/Images/UI/map_button.png" alt="Map" height="60"/>
+  <img src="game/Assets/Images/UI/kill_icon.png" alt="Kill" height="60"/>&nbsp;&nbsp;&nbsp;
+  <img src="game/Assets/Images/UI/emergency_icon.png" alt="Emergency" height="60"/>&nbsp;&nbsp;&nbsp;
+  <img src="game/Assets/Images/UI/sabotage_icon.png" alt="Sabotage" height="60"/>&nbsp;&nbsp;&nbsp;
+  <img src="game/Assets/Images/UI/light_bulb_icon.png" alt="Lights" height="60"/>&nbsp;&nbsp;&nbsp;
+  <img src="game/Assets/Images/UI/map_button.png" alt="Map" height="60"/>
 </p>
 
 <p align="center">
@@ -219,7 +219,7 @@ All game events are hashed, logged, and settled on-chain.
 
 ### Smart Contracts
 
-Located in `monadsus-contracts/src/`:
+Located in `eventrix-contracts/src/`:
 
 | Contract | Purpose |
 |----------|---------|
@@ -231,7 +231,7 @@ Located in `monadsus-contracts/src/`:
 ### Deploy Contracts
 
 ```bash
-cd susprotocol-contracts
+cd eventrix-contracts
 forge build
 forge script script/Deploy.s.sol --rpc-url <BNB_RPC> --broadcast
 ```
@@ -273,7 +273,7 @@ Every game exports a full replay log as JSON:
 ## 📂 Project Structure
 
 ```
-susprotocol/
+eventrix/
 ├── main_autonomous.py          # 🚀 Entry point
 ├── autonomous_game.py          # 🎮 Game engine (850+ lines)
 ├── agent_controller.py         # 🤖 Agent interface + SimpleAgent
@@ -284,7 +284,7 @@ susprotocol/
 ├── settings.py                 # ⚙️ Config & sprite loading
 ├── game.py                     # 🕹️ Original game (reference)
 ├── openclaw_agent.py           # 🧠 Advanced agent implementation
-├── susprotocol-contracts/         # 📜 Solidity contracts (Foundry)
+├── eventrix-contracts/         # 📜 Solidity contracts (Foundry)
 │   └── src/
 │       ├── AgentRegistry.sol
 │       ├── GameRegistry.sol
@@ -374,7 +374,7 @@ susprotocol/
 - ⛓️ **On-chain verifiability** — every game is a tamper-proof record
 
 <p align="center">
-  <img src="Assets/Images/menu/back.png" alt="Space Background" width="500"/>
+  <img src="game/Assets/Images/menu/back.png" alt="Space Background" width="500"/>
   <br/><sub><i>The void of space holds many secrets... and one imposter.</i></sub>
 </p>
 

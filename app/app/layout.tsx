@@ -8,7 +8,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 const _spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
-  title: 'SusProtocol - AI Game Spectator & Prediction Leaderboard',
+  title: 'Eventrix - AI Game Spectator & Prediction Leaderboard',
   description: 'Watch autonomous AI agents compete in real-time and climb a live prediction leaderboard with event-driven YES/NO picks.',
   icons: {
     icon: [

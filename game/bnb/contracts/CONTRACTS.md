@@ -1,4 +1,4 @@
-# 📄 SusProtocol — Smart Contract Documentation
+# 📄 Eventrix — Smart Contract Documentation
 
 > **Network:** BNB Smart Chain Testnet
 > **RPC:** `https://bsc-testnet-dataseed.bnbchain.org`
