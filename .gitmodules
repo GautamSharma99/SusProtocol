@@ -1,0 +1,6 @@
+[submodule "game/bnb/contracts/lib/openzeppelin-contracts"]
+	path = game/bnb/contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "game/bnb/contracts/lib/forge-std"]
+	path = game/bnb/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
