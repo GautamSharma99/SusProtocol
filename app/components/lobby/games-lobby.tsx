@@ -164,10 +164,10 @@ function GameCard({ game }: { game: GameListing }) {
         {/* Token ticker row */}
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs text-muted-foreground">
-            {game.tokenTicker}
+            Prediction Pool
           </span>
           <span className="font-mono text-sm font-bold text-foreground tabular-nums">
-            ${game.tokenPrice.toFixed(4)}
+            {Math.max(1, Math.round(game.viewers * 0.35)).toLocaleString()} picks
           </span>
           {game.priceChange !== 0 && (
             <span
@@ -180,7 +180,7 @@ function GameCard({ game }: { game: GameListing }) {
                 <TrendingDown className="size-3" />
               )}
               {game.priceChange > 0 ? "+" : ""}
-              {game.priceChange.toFixed(1)}%
+              {game.priceChange.toFixed(1)}% momentum
             </span>
           )}
         </div>
@@ -305,14 +305,14 @@ function FeaturedGame({ game }: { game: GameListing }) {
 
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm text-muted-foreground">
-            {game.tokenTicker}
+            Live predictions
           </span>
           <span className="font-mono text-xl font-bold text-foreground tabular-nums">
-            ${game.tokenPrice.toFixed(4)}
+            {Math.max(1, Math.round(game.viewers * 0.45)).toLocaleString()} picks
           </span>
           {game.priceChange > 0 && (
             <span className="flex items-center gap-1 font-mono text-sm font-bold text-success tabular-nums">
-              <TrendingUp className="size-4" />+{game.priceChange.toFixed(1)}%
+              <TrendingUp className="size-4" />+{game.priceChange.toFixed(1)}% momentum
             </span>
           )}
         </div>
@@ -346,7 +346,7 @@ function FeaturedGame({ game }: { game: GameListing }) {
             className="font-mono text-xs border-primary/30 text-primary hover:bg-primary/10 gap-2"
           >
             <Play className="size-3.5 fill-primary" />
-            Enter Arena
+            Enter Leaderboard
           </Button>
         </div>
       </div>
@@ -439,7 +439,7 @@ export function GamesLobby() {
             className="font-mono text-[10px] bg-primary/10 text-primary border-primary/30"
           >
             <Zap className="size-3" />
-            AI ARENA
+            PREDICTION ARENA
           </Badge>
         </div>
         <div className="flex items-center gap-4">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useGameStore } from "@/hooks/use-game-store"
+import { gameActions } from "@/hooks/use-game-store"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Lock, CheckCircle2, XCircle, BarChart3 } from "lucide-react"
@@ -31,7 +32,7 @@ const statusConfig: Record<
 }
 
 export function PredictionMarkets() {
-  const { markets } = useGameStore()
+  const { markets, currentUserId } = useGameStore()
 
   const openMarkets = markets.filter((m) => m.status === "OPEN")
   const frozenMarkets = markets.filter((m) => m.status === "FROZEN")
@@ -64,6 +65,12 @@ export function PredictionMarkets() {
             {sortedMarkets.map((market, i) => {
               const config = statusConfig[market.status]
               const StatusIcon = config.icon
+              const yourPick = market.predictions[currentUserId]
+              const isResolvedCorrect =
+                market.status === "RESOLVED" &&
+                yourPick &&
+                market.resolved &&
+                yourPick.choice === market.resolved
 
               return (
                 <div
@@ -109,39 +116,67 @@ export function PredictionMarkets() {
 
                   {/* Resolved */}
                   {market.status === "RESOLVED" && market.resolved && (
-                    <div
-                      className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-bold font-mono ${
-                        market.resolved === "YES"
-                          ? "bg-primary/20 text-primary"
-                          : "bg-destructive/20 text-destructive"
-                      }`}
-                    >
-                      {market.resolved === "YES" ? (
-                        <CheckCircle2 className="size-3" />
-                      ) : (
-                        <XCircle className="size-3" />
+                    <div className="flex flex-col gap-1.5">
+                      <div
+                        className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-bold font-mono ${
+                          market.resolved === "YES"
+                            ? "bg-primary/20 text-primary"
+                            : "bg-destructive/20 text-destructive"
+                        }`}
+                      >
+                        {market.resolved === "YES" ? (
+                          <CheckCircle2 className="size-3" />
+                        ) : (
+                          <XCircle className="size-3" />
+                        )}
+                        Resolved: {market.resolved}
+                      </div>
+                      {yourPick && (
+                        <div
+                          className={`rounded-md px-2.5 py-1 text-[10px] font-mono ${
+                            isResolvedCorrect
+                              ? "bg-primary/10 text-primary border border-primary/30"
+                              : "bg-muted/50 text-muted-foreground border border-border"
+                          }`}
+                        >
+                          Your pick: {yourPick.choice} {isResolvedCorrect ? "(+points)" : "(0 points)"}
+                        </div>
                       )}
-                      {market.resolved}
                     </div>
                   )}
 
                   {/* Action buttons */}
                   {market.status === "OPEN" && (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 font-mono text-[10px] h-7"
-                        variant="outline"
-                      >
-                        YES
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-destructive/20 text-destructive border border-destructive/30 hover:bg-destructive/30 font-mono text-[10px] h-7"
-                        variant="outline"
-                      >
-                        NO
-                      </Button>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 font-mono text-[10px] h-7"
+                          variant="outline"
+                          disabled={!!yourPick}
+                          onClick={() => gameActions.submitPrediction(market.id, "YES")}
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-destructive/20 text-destructive border border-destructive/30 hover:bg-destructive/30 font-mono text-[10px] h-7"
+                          variant="outline"
+                          disabled={!!yourPick}
+                          onClick={() => gameActions.submitPrediction(market.id, "NO")}
+                        >
+                          NO
+                        </Button>
+                      </div>
+                      {yourPick ? (
+                        <div className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] text-primary font-mono">
+                          Your pick is locked: {yourPick.choice}
+                        </div>
+                      ) : (
+                        <div className="rounded-md border border-border/50 bg-secondary/30 px-2 py-1 text-[10px] text-muted-foreground font-mono">
+                          Submit one prediction before lock
+                        </div>
+                      )}
                     </div>
                   )}
 

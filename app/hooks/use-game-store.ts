@@ -2,16 +2,16 @@
 
 import { useSyncExternalStore } from "react"
 import type {
-  GameState,
-  GameEvent,
-  FeedItem,
-  PredictionMarket,
   Agent,
-  TokenState,
-  PricePoint,
+  FeedItem,
+  GameEvent,
+  GameState,
+  LeaderboardEntry,
+  MarketKind,
+  PredictionChoice,
+  PredictionMarket,
 } from "@/lib/game-types"
 
-// Agent colors
 const AGENT_COLORS = [
   "#3dd8e0",
   "#e04040",
@@ -25,72 +25,226 @@ const AGENT_COLORS = [
   "#e0e060",
 ]
 
+const CURRENT_USER_ID = "you"
+const SCORE_CORRECT = 10
+const SCORE_EARLY = 2
+const EARLY_WINDOW_MS = 6000
+
+const LEADERBOARD_USERS = [
+  { userId: CURRENT_USER_ID, username: "You" },
+  { userId: "nova_fan", username: "NovaFan" },
+  { userId: "taskmaster", username: "TaskMaster" },
+  { userId: "ghostcam", username: "GhostCam" },
+  { userId: "crewlogic", username: "CrewLogic" },
+  { userId: "ventwatch", username: "VentWatch" },
+]
+
 function createId() {
   return Math.random().toString(36).slice(2, 10)
 }
 
-function createMarket(question: string, relatedAgent?: string): PredictionMarket {
-  const yesOdds = Math.round(30 + Math.random() * 40)
+function createMarket(kind: MarketKind, question: string, relatedAgent?: string): PredictionMarket {
+  const yesOdds = Math.round(40 + Math.random() * 20)
   return {
     id: createId(),
+    kind,
     question,
     yesOdds,
     noOdds: 100 - yesOdds,
     status: "OPEN",
     createdAt: Date.now(),
     relatedAgent,
+    predictions: {},
   }
 }
 
-// --- Token economics ---
-
-const BASE_PRICE = 0.001
-const STARTING_CREDITS = 1000
-
-const HYPE_MAP: Record<string, number> = {
-  GAME_START: 20,
-  KILL: 15,
-  MEETING_START: 10,
-  VOTE: 2,
-  EJECTION: 8,
-  GAME_END: 0,
+function accuracy(entry: LeaderboardEntry): number {
+  if (entry.total === 0) return 0
+  return (entry.correct / entry.total) * 100
 }
 
-function calcPrice(hypeScore: number): number {
-  const multiplier = 1 + hypeScore / 50
-  const noise = 0.97 + Math.random() * 0.06
-  return parseFloat((BASE_PRICE * multiplier * noise).toFixed(6))
+function rankLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
+  const sorted = [...entries].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points
+    const accDiff = accuracy(b) - accuracy(a)
+    if (accDiff !== 0) return accDiff
+    return a.username.localeCompare(b.username)
+  })
+  return sorted.map((entry, index) => ({ ...entry, rank: index + 1 }))
 }
 
-const initialToken: TokenState = {
-  name: "SusProtocol",
-  ticker: "$SUS",
-  price: BASE_PRICE,
-  priceHistory: [{ time: Date.now(), price: BASE_PRICE }],
-  hypeScore: 0,
-  userCredits: STARTING_CREDITS,
-  userTokens: 0,
-  gameActive: false,
-  cashedOut: false,
+function initialLeaderboard(): LeaderboardEntry[] {
+  return rankLeaderboard(
+    LEADERBOARD_USERS.map((u) => ({
+      userId: u.userId,
+      username: u.username,
+      points: 0,
+      correct: 0,
+      total: 0,
+      streak: 0,
+      bestStreak: 0,
+      rank: 0,
+      lastDelta: 0,
+    }))
+  )
 }
 
-const initialState: GameState = {
-  phase: "waiting",
-  agents: [],
-  feed: [],
-  markets: [],
-  imposter: null,
-  winner: null,
-  connectionStatus: "disconnected",
-  token: { ...initialToken },
+function createInitialState(): GameState {
+  return {
+    phase: "waiting",
+    agents: [],
+    feed: [],
+    markets: [],
+    leaderboard: initialLeaderboard(),
+    currentUserId: CURRENT_USER_ID,
+    imposter: null,
+    winner: null,
+    connectionStatus: "disconnected",
+  }
 }
 
-// --- Lightweight external store ---
+function applyCrowdOdds(market: PredictionMarket): PredictionMarket {
+  const predictions = Object.values(market.predictions)
+  if (predictions.length === 0) return market
+  const yesCount = predictions.filter((p) => p.choice === "YES").length
+  const yesOdds = Math.round((yesCount / predictions.length) * 100)
+  return {
+    ...market,
+    yesOdds,
+    noOdds: 100 - yesOdds,
+  }
+}
+
+function withBotPredictions(
+  market: PredictionMarket,
+  leaderboard: LeaderboardEntry[],
+  currentUserId: string
+): PredictionMarket {
+  let seeded = { ...market, predictions: { ...market.predictions } }
+  for (const entry of leaderboard) {
+    if (entry.userId === currentUserId) continue
+    const choice: PredictionChoice = Math.random() * 100 < seeded.yesOdds ? "YES" : "NO"
+    const predictedAt = seeded.createdAt + Math.floor(Math.random() * 9000)
+    seeded.predictions[entry.userId] = {
+      userId: entry.userId,
+      choice,
+      predictedAt,
+    }
+  }
+  return applyCrowdOdds(seeded)
+}
+
+function appendMarkets(prev: GameState, freshMarkets: PredictionMarket[]): GameState {
+  if (freshMarkets.length === 0) return prev
+  const seeded = freshMarkets.map((m) =>
+    withBotPredictions(m, prev.leaderboard, prev.currentUserId)
+  )
+  return {
+    ...prev,
+    markets: [...prev.markets, ...seeded],
+  }
+}
+
+function resolveSingleMarket(state: GameState, marketId: string, outcome: PredictionChoice): GameState {
+  const target = state.markets.find((m) => m.id === marketId)
+  if (!target || target.status === "RESOLVED") return state
+
+  const resolvedAt = Date.now()
+  const markets = state.markets.map((m) =>
+    m.id === marketId
+      ? {
+          ...m,
+          status: "RESOLVED" as const,
+          resolved: outcome,
+          lockedAt: m.lockedAt ?? resolvedAt,
+          resolvedAt,
+        }
+      : m
+  )
+
+  const leaderboard = rankLeaderboard(
+    state.leaderboard.map((entry) => {
+      const prediction = target.predictions[entry.userId]
+      if (!prediction) return { ...entry, lastDelta: 0 }
+
+      const isCorrect = prediction.choice === outcome
+      const earlyBonus =
+        isCorrect && prediction.predictedAt - target.createdAt <= EARLY_WINDOW_MS ? SCORE_EARLY : 0
+      const delta = isCorrect ? SCORE_CORRECT + earlyBonus : 0
+      const nextStreak = isCorrect ? entry.streak + 1 : 0
+
+      return {
+        ...entry,
+        points: entry.points + delta,
+        correct: entry.correct + (isCorrect ? 1 : 0),
+        total: entry.total + 1,
+        streak: nextStreak,
+        bestStreak: Math.max(entry.bestStreak, nextStreak),
+        lastDelta: delta,
+      }
+    })
+  )
+
+  return {
+    ...state,
+    markets,
+    leaderboard,
+  }
+}
+
+function resolveMarkets(
+  state: GameState,
+  shouldResolve: (market: PredictionMarket) => boolean,
+  outcomeFor: (market: PredictionMarket, snapshot: GameState) => PredictionChoice
+): GameState {
+  let next = state
+  for (const market of state.markets) {
+    if (market.status === "RESOLVED") continue
+    if (!shouldResolve(market)) continue
+    next = resolveSingleMarket(next, market.id, outcomeFor(market, next))
+  }
+  return next
+}
+
+function submitPrediction(marketId: string, choice: PredictionChoice) {
+  let accepted = false
+  setState((prev) => {
+    const market = prev.markets.find((m) => m.id === marketId)
+    if (!market || market.status !== "OPEN") return prev
+    if (market.predictions[prev.currentUserId]) return prev
+
+    accepted = true
+    const updated = applyCrowdOdds({
+      ...market,
+      predictions: {
+        ...market.predictions,
+        [prev.currentUserId]: {
+          userId: prev.currentUserId,
+          choice,
+          predictedAt: Date.now(),
+        },
+      },
+    })
+
+    return {
+      ...prev,
+      markets: prev.markets.map((m) => (m.id === marketId ? updated : m)),
+    }
+  })
+
+  if (accepted) {
+    addFeedItem("VOTE", `You predicted ${choice}`, "Points update when this market resolves")
+  }
+}
+
+let meetingUnlockTimer: ReturnType<typeof setTimeout> | null = null
+
+const initialState = createInitialState()
 
 type Listener = () => void
 
-let state: GameState = { ...initialState }
-let listeners = new Set<Listener>()
+let state: GameState = initialState
+const listeners = new Set<Listener>()
 
 function getSnapshot(): GameState {
   return state
@@ -106,8 +260,6 @@ function setState(updater: (prev: GameState) => GameState) {
   listeners.forEach((l) => l())
 }
 
-// --- Feed helper ---
-
 function addFeedItem(type: GameEvent["type"], message: string, details?: string) {
   const item: FeedItem = {
     id: createId(),
@@ -122,59 +274,34 @@ function addFeedItem(type: GameEvent["type"], message: string, details?: string)
   }))
 }
 
-// --- Update token on hype event ---
-
-function updateTokenHype(eventType: string, label?: string) {
-  const hypeIncrease = HYPE_MAP[eventType] ?? 0
-  if (hypeIncrease === 0 && eventType !== "GAME_END") return
-
-  setState((prev) => {
-    const newHype = prev.token.hypeScore + hypeIncrease
-    const newPrice = eventType === "GAME_END" ? prev.token.price : calcPrice(newHype)
-    const point: PricePoint = {
-      time: Date.now(),
-      price: newPrice,
-      label,
-    }
-    return {
-      ...prev,
-      token: {
-        ...prev.token,
-        hypeScore: newHype,
-        price: newPrice,
-        priceHistory: [...prev.token.priceHistory, point],
-        gameActive: eventType !== "GAME_END",
-      },
-    }
-  })
-}
-
-// --- Process game events ---
-
 function processEvent(event: GameEvent) {
   switch (event.type) {
     case "GAME_START": {
+      if (meetingUnlockTimer) clearTimeout(meetingUnlockTimer)
       const agents: Agent[] = event.agents.map((name, i) => ({
         name,
         alive: true,
         color: AGENT_COLORS[i % AGENT_COLORS.length],
       }))
+      const leaderboard = initialLeaderboard()
+      const openingMarket = withBotPredictions(
+        createMarket("crew_win", "Will the Crew win?"),
+        leaderboard,
+        CURRENT_USER_ID
+      )
+
       setState((prev) => ({
-        ...prev,
+        ...createInitialState(),
         phase: "running",
         agents,
-        feed: [],
-        markets: [createMarket("Will the Crew win?")],
+        leaderboard,
+        markets: [openingMarket],
         imposter: event.imposter ?? null,
         winner: null,
-        token: {
-          ...initialToken,
-          gameActive: true,
-          priceHistory: [{ time: Date.now(), price: BASE_PRICE }],
-        },
+        connectionStatus: prev.connectionStatus,
       }))
+
       addFeedItem("GAME_START", "Game Started", `${event.agents.length} agents entered`)
-      updateTokenHype("GAME_START", "Launch")
       break
     }
 
@@ -183,39 +310,68 @@ function processEvent(event: GameEvent) {
         const agents = prev.agents.map((a) =>
           a.name === event.victim ? { ...a, alive: false, killedAt: Date.now() } : a
         )
-        const isFirstKill = prev.agents.filter((a) => !a.alive).length === 0
-        const newMarkets = isFirstKill
-          ? [
-            createMarket(`Is ${event.killer} the Imposter?`, event.killer),
-            createMarket(
-              `Will ${agents.find((a) => a.alive && a.name !== event.killer)?.name ?? "someone"} survive?`
-            ),
-          ]
-          : [createMarket(`Will ${event.killer} kill again?`, event.killer)]
 
-        return { ...prev, agents, markets: [...prev.markets, ...newMarkets] }
+        let next: GameState = { ...prev, phase: "running", agents }
+
+        next = resolveMarkets(
+          next,
+          (market) => market.kind === "killer_kill_again" && market.relatedAgent === event.killer,
+          () => "YES"
+        )
+        next = resolveMarkets(
+          next,
+          (market) => market.kind === "agent_survive_round" && market.relatedAgent === event.victim,
+          () => "NO"
+        )
+
+        const wasFirstKill = prev.agents.every((a) => a.alive)
+        if (wasFirstKill) {
+          const survivorCandidate = agents.find((a) => a.alive && a.name !== event.killer)?.name
+          const newMarkets = [
+            createMarket("identify_impostor", `Is ${event.killer} the Impostor?`, event.killer),
+          ]
+          if (survivorCandidate) {
+            newMarkets.push(
+              createMarket(
+                "agent_survive_round",
+                `Will ${survivorCandidate} survive this round?`,
+                survivorCandidate
+              )
+            )
+          }
+          return appendMarkets(next, newMarkets)
+        }
+
+        return appendMarkets(
+          next,
+          [createMarket("killer_kill_again", `Will ${event.killer} kill again?`, event.killer)]
+        )
       })
+
       addFeedItem("KILL", `${event.victim} was eliminated`, `Killed by ${event.killer}`)
-      updateTokenHype("KILL", "Kill")
       break
     }
 
     case "MEETING_START": {
-      setState((prev) => ({
-        ...prev,
-        phase: "meeting",
-        markets: prev.markets.map((m) =>
-          m.status === "OPEN" ? { ...m, status: "FROZEN" as const } : m
-        ),
-      }))
+      setState((prev) => {
+        let next: GameState = {
+          ...prev,
+          phase: "meeting",
+          markets: prev.markets.map((m) =>
+            m.status === "OPEN" ? { ...m, status: "FROZEN" as const, lockedAt: Date.now() } : m
+          ),
+        }
+        next = appendMarkets(next, [createMarket("meeting_ejects", "Will this meeting eject an agent?")])
+        return next
+      })
+
       addFeedItem("MEETING_START", "Emergency Meeting Called", "All agents assemble")
-      updateTokenHype("MEETING_START", "Meeting")
-      setTimeout(() => {
+
+      if (meetingUnlockTimer) clearTimeout(meetingUnlockTimer)
+      meetingUnlockTimer = setTimeout(() => {
         setState((prev) => ({
           ...prev,
-          markets: prev.markets.map((m) =>
-            m.status === "FROZEN" ? { ...m, status: "OPEN" as const } : m
-          ),
+          markets: prev.markets.map((m) => (m.status === "FROZEN" ? { ...m, status: "OPEN" as const } : m)),
         }))
       }, 2000)
       break
@@ -223,131 +379,99 @@ function processEvent(event: GameEvent) {
 
     case "VOTE": {
       addFeedItem("VOTE", `${event.agent} voted`, `Voted to eject ${event.target}`)
-      updateTokenHype("VOTE")
       break
     }
 
     case "EJECTION": {
-      setState((prev) => ({
-        ...prev,
-        phase: "running",
-        agents: prev.agents.map((a) =>
-          a.name === event.ejected
-            ? { ...a, alive: false, ejected: true, ejectedAt: Date.now() }
-            : a
-        ),
-      }))
+      setState((prev) => {
+        let next: GameState = {
+          ...prev,
+          phase: "running",
+          agents: prev.agents.map((a) =>
+            a.name === event.ejected
+              ? { ...a, alive: false, ejected: true, ejectedAt: Date.now() }
+              : a
+          ),
+        }
+
+        next = resolveMarkets(
+          next,
+          (market) => market.kind === "meeting_ejects",
+          () => "YES"
+        )
+        next = resolveMarkets(
+          next,
+          (market) => market.kind === "agent_survive_round" && !!market.relatedAgent,
+          (market, snapshot) => {
+            const agent = snapshot.agents.find((a) => a.name === market.relatedAgent)
+            return agent?.alive ? "YES" : "NO"
+          }
+        )
+        next = resolveMarkets(
+          next,
+          (market) => market.kind === "identify_impostor" && market.relatedAgent === event.ejected,
+          (_, snapshot) => (snapshot.imposter === event.ejected ? "YES" : "NO")
+        )
+
+        return next
+      })
+
       addFeedItem("EJECTION", `${event.ejected} was ejected`, "The crew has spoken")
-      updateTokenHype("EJECTION", "Eject")
       break
     }
 
     case "GAME_END": {
-      setState((prev) => ({
-        ...prev,
-        phase: "ended",
-        winner: event.winner,
-        imposter: event.imposter,
-        markets: prev.markets.map((m) => {
-          if (m.question.includes("Crew win")) {
-            return {
-              ...m,
-              status: "RESOLVED" as const,
-              resolved: event.winner === "crew" ? ("YES" as const) : ("NO" as const),
+      setState((prev) => {
+        let next: GameState = {
+          ...prev,
+          phase: "ended",
+          winner: event.winner,
+          imposter: event.imposter,
+        }
+
+        next = resolveMarkets(
+          next,
+          (market) => market.status !== "RESOLVED",
+          (market, snapshot) => {
+            if (market.kind === "crew_win") return event.winner === "crew" ? "YES" : "NO"
+            if (market.kind === "identify_impostor")
+              return market.relatedAgent === event.imposter ? "YES" : "NO"
+            if (market.kind === "agent_survive_round") {
+              const agent = snapshot.agents.find((a) => a.name === market.relatedAgent)
+              return agent?.alive ? "YES" : "NO"
             }
+            return "NO"
           }
-          if (m.question.includes("Imposter") && m.relatedAgent) {
-            return {
-              ...m,
-              status: "RESOLVED" as const,
-              resolved: m.relatedAgent === event.imposter ? ("YES" as const) : ("NO" as const),
-            }
-          }
-          return { ...m, status: "RESOLVED" as const }
-        }),
-      }))
+        )
+
+        return next
+      })
+
       addFeedItem(
         "GAME_END",
-        event.winner === "crew" ? "Crew Wins!" : "Imposter Wins!",
-        `The imposter was ${event.imposter}`
+        event.winner === "crew" ? "Crew Wins!" : "Impostor Wins!",
+        `The impostor was ${event.imposter}`
       )
-      updateTokenHype("GAME_END", "End")
       break
     }
   }
 }
 
-// --- Token actions ---
-
-function buyToken(amount: number) {
-  setState((prev) => {
-    if (!prev.token.gameActive || prev.token.cashedOut) return prev
-    const cost = amount * prev.token.price
-    if (cost > prev.token.userCredits) return prev
-    return {
-      ...prev,
-      token: {
-        ...prev.token,
-        userCredits: parseFloat((prev.token.userCredits - cost).toFixed(2)),
-        userTokens: prev.token.userTokens + amount,
-      },
-    }
-  })
+function resetGame() {
+  if (meetingUnlockTimer) clearTimeout(meetingUnlockTimer)
+  setState(() => createInitialState())
 }
-
-function sellToken(amount: number) {
-  setState((prev) => {
-    if (!prev.token.gameActive || prev.token.cashedOut) return prev
-    if (amount > prev.token.userTokens) return prev
-    const revenue = amount * prev.token.price
-    return {
-      ...prev,
-      token: {
-        ...prev.token,
-        userCredits: parseFloat((prev.token.userCredits + revenue).toFixed(2)),
-        userTokens: prev.token.userTokens - amount,
-      },
-    }
-  })
-}
-
-function cashOut() {
-  setState((prev) => {
-    if (prev.token.cashedOut || prev.token.gameActive) return prev
-    const revenue = prev.token.userTokens * prev.token.price
-    return {
-      ...prev,
-      token: {
-        ...prev.token,
-        userCredits: parseFloat((prev.token.userCredits + revenue).toFixed(2)),
-        userTokens: 0,
-        cashedOut: true,
-      },
-    }
-  })
-}
-
-// --- Exported hook ---
 
 export function useGameStore() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
-// Stable module-level actions object
 export const gameActions = {
   processEvent,
+  submitPrediction,
   setConnectionStatus: (status: GameState["connectionStatus"]) =>
     setState((prev) => ({ ...prev, connectionStatus: status })),
-  resetGame: () =>
-    setState(() => ({ ...initialState, token: { ...initialToken, priceHistory: [{ time: Date.now(), price: BASE_PRICE }] } })),
-  buyToken,
-  sellToken,
-  cashOut,
-  setGameMeta: ({ ticker, title }: { ticker: string; title: string }) =>
-    setState((prev) => ({
-      ...prev,
-      token: { ...prev.token, ticker, name: title },
-    })),
+  resetGame,
 }
 
 export function useGameActions() {
