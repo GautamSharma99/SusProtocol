@@ -27,7 +27,9 @@ from game import Game
 from sprites import Player, Bot
 from settings import *
 from agent_controller import SimpleAgent
-from blockchain import MonadSusChainIntegration
+from bnb.blockchain import MonadSusChainIntegration
+from ws_emitter import GameEmitter
+from frame_streamer import FrameStreamer
 
 
 # ---------------------------------------------------------------------------
@@ -145,6 +147,13 @@ class AutonomousGame:
         self.chain = MonadSusChainIntegration(live_mode=live_mode)
         self.game_id: int | None = None
 
+        # WebSocket bridge emitter (fire-and-forget, bridge may be offline)
+        bridge_game_id = os.environ.get("BRIDGE_GAME_ID", "game-001")
+        self.emitter = GameEmitter(bridge_game_id)
+
+        # Frame streamer — sends pygame visuals to browser at ~10 FPS
+        self.frame_streamer = FrameStreamer(game_id=bridge_game_id)
+
     # ------------------------------------------------------------------
     # Setup
     # ------------------------------------------------------------------
@@ -236,6 +245,7 @@ class AutonomousGame:
 
         # Initialize blockchain integration
         self.game_id = self.chain.on_game_start(self.all_colours, self.imposter_colour)
+        self.emitter.game_start(self.all_colours, self.imposter_colour or "")
 
         self._log(f"Match started — {len(self.all_colours)} agents")
         self._log(f"Imposter: {self.imposter_colour}")
@@ -388,6 +398,7 @@ class AutonomousGame:
 
         self._log(f"{killer_c} killed {victim_c}!")
         self.chain.logger.log_kill(killer_c, victim_c)
+        self.emitter.kill(killer_c, victim_c)
         return True
 
     # ------------------------------------------------------------------
@@ -425,6 +436,7 @@ class AutonomousGame:
 
         self._log(f"Meeting called by {trigger_colour}!")
         self.chain.logger.log_meeting(trigger_colour)
+        self.emitter.meeting_start(trigger_colour)
 
     def _process_votes(self):
         """Return colour to eject (or None for skip / tie)."""
@@ -452,9 +464,10 @@ class AutonomousGame:
         )
         self._log(f"Votes: {summary}")
         
-        # Log votes to blockchain
+        # Log votes to blockchain and emit to bridge
         for voter, target in self.votes.items():
             self.chain.logger.log_vote(voter, target)
+            self.emitter.vote_cast(voter, target)
 
         if ejected:
             self.eject_active = True
@@ -468,6 +481,7 @@ class AutonomousGame:
                 + ("They were the Imposter!" if imp else "They were NOT the Imposter.")
             )
             self.chain.logger.log_eject(ejected, imp)
+            self.emitter.ejection(ejected, imp)
         else:
             self._log("No one was ejected (tie or skip).")
 
@@ -512,12 +526,14 @@ class AutonomousGame:
             self.game_over = True
             self.winner = "CREW"
             self._log("CREW WINS — the imposter was eliminated!")
+            self.emitter.game_end("crew", self.imposter_colour or "")
             self._settle_blockchain()
             return True
         if len(imps) >= len(crew):
             self.game_over = True
             self.winner = "IMPOSTER"
             self._log("IMPOSTER WINS — crew is outnumbered!")
+            self.emitter.game_end("imposter", self.imposter_colour or "")
             self._settle_blockchain()
             return True
         return False
@@ -607,6 +623,9 @@ class AutonomousGame:
         # Game-over overlay
         if self.game_over:
             self._draw_game_over(screen)
+
+        # Stream this frame to the bridge server (spectator video)
+        self.frame_streamer.submit(screen)
 
         pg.display.flip()
 
@@ -954,29 +973,28 @@ class AutonomousGame:
         timer_rect = timer_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
         screen.blit(timer_text, timer_rect)
         
-        # Info text
-        info_lines = [
-            "Buy agent tokens now!",
-            "Trading will lock when the game starts.",
-            "",
-            "Winners' token holders split 90% of prize pool."
-        ]
-        
-        y_offset = HEIGHT * 3 // 4
-        for line in info_lines:
-            info = self.hud_font.render(line, True, WHITE)
-            info_rect = info.get_rect(center=(WIDTH // 2, y_offset))
-            screen.blit(info, info_rect)
-            y_offset += 35
-        
-        # Agent list
+        # Agent list — shown right below the countdown timer
         agents_title = self.hud_font_sm.render("Agents in this game:", True, (150, 150, 150))
-        agents_rect = agents_title.get_rect(center=(WIDTH // 2, HEIGHT - 100))
+        agents_rect = agents_title.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 80))
         screen.blit(agents_title, agents_rect)
-        
+
         agent_text = ", ".join(self.all_colours)
         agents_display = self.hud_font_sm.render(agent_text, True, (200, 200, 200))
-        agents_display_rect = agents_display.get_rect(center=(WIDTH // 2, HEIGHT - 70))
+        agents_display_rect = agents_display.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 110))
         screen.blit(agents_display, agents_display_rect)
-        
+
+        # Info text block — well below the agent list
+        info_lines = [
+            ("Buy agent tokens now!",                              WHITE),
+            ("Trading will lock when the game starts.",            WHITE),
+            ("Winners' token holders split 90% of prize pool.",   (100, 220, 100)),
+        ]
+
+        y_offset = HEIGHT // 2 + 165
+        for line, color in info_lines:
+            info = self.hud_font.render(line, True, color)
+            info_rect = info.get_rect(center=(WIDTH // 2, y_offset))
+            screen.blit(info, info_rect)
+            y_offset += 40
+
         pg.display.flip()
