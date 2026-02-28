@@ -4,6 +4,8 @@ import { ArrowRight, ExternalLink } from "lucide-react";
 export default function HeroSection() {
   return (
     <section className="relative flex min-h-[90vh] items-center justify-center overflow-hidden pt-16">
+      {/* Black layer behind gif */}
+      <div className="absolute inset-0 z-0 bg-black" aria-hidden="true" />
       {/* pookie.gif background */}
       <div
         className="absolute inset-0 z-0"
