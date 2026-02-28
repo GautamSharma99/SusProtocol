@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Play, RotateCcw, BarChart3, Trophy, ArrowLeft } from "lucide-react"
 import { MOCK_GAMES } from "@/lib/games-data"
-import { ContractsInline } from "@/components/contracts/contracts-inline"
 import Link from "next/link"
 
 const BRIDGE_URL = process.env.NEXT_PUBLIC_BRIDGE_URL ?? "http://localhost:8000"
@@ -41,7 +40,6 @@ export function SpectatorApp({ gameId }: SpectatorAppProps) {
   return (
     <div className="flex h-screen flex-col bg-background">
       <SpectatorHeader gameMeta={gameMeta ?? undefined} />
-      <ContractsInline keys={["gameRegistry", "predictionMarket", "gamePrizePool"]} />
 
       {/* Demo controls bar */}
       <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-4 py-1.5 shrink-0">
