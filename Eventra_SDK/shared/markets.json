@@ -1,0 +1,8 @@
+﻿[
+  {
+    "id": "winner",
+    "description": "Who will win the match?",
+    "triggerEvent": "GAME_START",
+    "outcomeResolver": "GAME_END.winner"
+  }
+]

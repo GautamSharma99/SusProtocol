@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 30% 12%;
+    --foreground: 60 30% 88%;
+
+    --card: 220 25% 16%;
+    --card-foreground: 60 30% 88%;
+
+    --popover: 220 25% 16%;
+    --popover-foreground: 60 30% 88%;
+
+    --primary: 140 60% 50%;
+    --primary-foreground: 220 30% 8%;
+
+    --secondary: 220 20% 20%;
+    --secondary-foreground: 60 20% 80%;
+
+    --muted: 220 18% 22%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 50 90% 55%;
+    --accent-foreground: 220 30% 8%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 60 30% 95%;
+
+    --border: 220 15% 28%;
+    --input: 220 15% 28%;
+    --ring: 140 60% 50%;
+
+    --radius: 0px;
+
+    --retro-shadow: 4px 4px 0px hsl(0 0% 0%);
+    --retro-shadow-sm: 2px 2px 0px hsl(0 0% 0%);
+    --retro-shadow-pressed: 1px 1px 0px hsl(0 0% 0%);
+
+    --sidebar-background: 220 25% 14%;
+    --sidebar-foreground: 60 20% 80%;
+    --sidebar-primary: 140 60% 50%;
+    --sidebar-primary-foreground: 220 30% 8%;
+    --sidebar-accent: 220 20% 20%;
+    --sidebar-accent-foreground: 60 30% 88%;
+    --sidebar-border: 220 15% 28%;
+    --sidebar-ring: 140 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    image-rendering: pixelated;
+  }
+  body {
+    @apply bg-background text-foreground font-pixel antialiased;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(140 60% 60%), hsl(50 90% 55%));
+  }
+  .retro-border {
+    border: 3px solid hsl(0 0% 0%);
+    box-shadow: var(--retro-shadow);
+  }
+  .retro-border-sm {
+    border: 2px solid hsl(0 0% 0%);
+    box-shadow: var(--retro-shadow-sm);
+  }
+  .retro-border-pressed {
+    border: 3px solid hsl(0 0% 0%);
+    box-shadow: var(--retro-shadow-pressed);
+    transform: translate(2px, 2px);
+  }
+  .glow-border {
+    border: 3px solid hsl(0 0% 0%);
+    box-shadow: var(--retro-shadow), 0 0 12px -4px hsl(var(--primary) / 0.4);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .fade-bottom {
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+  .pixel-scanlines {
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      hsl(0 0% 0% / 0.06) 2px,
+      hsl(0 0% 0% / 0.06) 4px
+    );
+  }
+}

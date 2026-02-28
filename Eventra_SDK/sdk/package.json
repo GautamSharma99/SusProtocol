@@ -1,0 +1,17 @@
+{
+  "name": "eventra-sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": "./dist/src/index.js",
+    "./src/types": "./dist/src/types.js"
+  },
+  "dependencies": {
+    "@types/ws": "^8.18.1",
+    "ethers": "^5.7.2",
+    "ts-node": "^10.9.2",
+    "ws": "^8.19.0"
+  }
+}
